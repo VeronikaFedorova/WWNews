@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FiSearch, FiX } from 'react-icons/fi';
-import { searchNews } from '../services/newsApi';
 import NewsList from '../components/NewsList';
+import { useSearchNews } from '../hooks/useSearchNews';
+import type { Article } from '../types/news';
 
 export default function Search() {
   const [params, setParams] = useSearchParams();
@@ -10,55 +11,48 @@ export default function Search() {
   const lang = params.get('lang') || 'en';
 
   const [query, setQuery] = useState(initialQ);
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [debounced, setDebounced] = useState(initialQ);
 
-  const cleaned = useMemo(() => query.trim(), [query]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query), 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const cleaned = useMemo(() => debounced.trim(), [debounced]);
   const canSearch = cleaned.length >= 2;
 
   useEffect(() => {
     if (!canSearch) {
-      setArticles([]);
-      setLoading(false);
-      setError('');
-      if (params.get('q')) setParams({ ...(lang ? { lang } : {}) });
+      if (params.get('q')) {
+        setParams(lang ? { lang } : {}, { replace: true });
+      }
       return;
     }
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      setLoading(true);
-      setError('');
-      setParams({ q: cleaned, ...(lang ? { lang } : {}) });
+    const next: Record<string, string> = { q: cleaned };
+    if (lang) next.lang = lang;
 
-      searchNews({
-        q: cleaned,
-        lang,
-        max: 12,
-        page: 1,
-        signal: controller.signal,
-      })
-        .then((res) => setArticles(res.data.articles || []))
-        .catch((e) => {
-          if (e.code === 'ERR_CANCELED') return;
-          setError(e.response?.data?.error || 'Search failed');
-        })
-        .finally(() => setLoading(false));
-    }, 350);
+    if (params.get('q') !== cleaned || params.get('lang') !== lang) {
+      setParams(next, { replace: true });
+    }
+  }, [canSearch, cleaned, lang, setParams]);
 
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [cleaned, canSearch, lang, params, setParams]);
+  const { data, isFetching, error } = useSearchNews(
+    {
+      q: cleaned,
+      max: 12,
+      page: 1,
+      lang,
+    },
+    canSearch
+  );
+
+  const articles: Article[] = data?.articles ?? [];
 
   const clear = () => {
     setQuery('');
-    setArticles([]);
-    setError('');
-    setLoading(false);
-    setParams(lang ? { lang } : {});
+    setDebounced('');
+    setParams(lang ? { lang } : {}, { replace: true });
   };
 
   return (
@@ -97,14 +91,15 @@ export default function Search() {
             </div>
           </div>
 
-          {error && (
+          {error instanceof Error && (
             <div className='rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300'>
-              {error}
+              {error.message || 'Search failed'}
             </div>
           )}
+
           {canSearch &&
-            !loading &&
-            !error &&
+            !isFetching &&
+            !(error instanceof Error) &&
             (articles.length ? (
               <div className='mt-1'>
                 <NewsList articles={articles} />
@@ -119,7 +114,7 @@ export default function Search() {
               </div>
             ))}
 
-          {canSearch && loading && !error && (
+          {canSearch && isFetching && !(error instanceof Error) && (
             <div className='grid grid-cols-2 lg:grid-cols-4 gap-6'>
               {Array.from({ length: 8 }).map((_, i) => (
                 <div

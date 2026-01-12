@@ -1,11 +1,21 @@
-import { useRouteError, Link } from 'react-router-dom';
+import { Link, useRouteError } from 'react-router-dom';
+
+type RouteError = {
+  status?: number;
+  statusText?: string;
+  message?: string;
+};
 
 export default function ErrorPage() {
-  const error = useRouteError();
+  const error = useRouteError() as RouteError | unknown;
 
   console.error(error);
 
-  const status = error?.status || 500;
+  const status =
+    typeof error === 'object' && error !== null && 'status' in error
+      ? (error as RouteError).status ?? 500
+      : 500;
+
   const title = status === 404 ? 'Page not found' : 'Something went wrong';
   const description =
     status === 404
@@ -42,6 +52,7 @@ export default function ErrorPage() {
           </Link>
 
           <button
+            type='button'
             onClick={() => window.location.reload()}
             className='
               inline-flex items-center justify-center

@@ -5,14 +5,13 @@ import SideMenu from '../components/SideMenu';
 import Footer from '../components/Footer';
 
 export default function AppLayout() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
   return (
     <>
       <Header onOpenMenu={() => setMenuOpen(true)} />
       <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-
-      <main className='min-h-[calc(100vh-120px)] max-w-6xl mx-auto px-4 py-6 '>
+      <main className='min-h-[calc(100vh-120px)] max-w-6xl mx-auto px-4 py-6'>
         <Outlet />
       </main>
       <Footer />

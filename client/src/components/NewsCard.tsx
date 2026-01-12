@@ -1,6 +1,17 @@
 import { Link } from 'react-router-dom';
+import type { Article } from '../types/news';
 
-export default function NewsCard({ article, variant = 'small' }) {
+type NewsCardVariant = 'small' | 'large';
+
+type NewsCardProps = {
+  article: Article;
+  variant?: NewsCardVariant;
+};
+
+export default function NewsCard({
+  article,
+  variant = 'small',
+}: NewsCardProps) {
   const isLarge = variant === 'large';
 
   if (!isLarge) {
