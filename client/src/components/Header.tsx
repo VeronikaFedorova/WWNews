@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
-import logo from '../assets/logo.png';
 import { FiMenu } from 'react-icons/fi';
+import logo from '../assets/logo.png';
 
-export default function Header({ onOpenMenu }) {
+type HeaderProps = {
+  onOpenMenu: () => void;
+};
+
+export default function Header({ onOpenMenu }: HeaderProps) {
   return (
     <header className='border-b bg-white dark:bg-zinc-900 dark:border-zinc-800'>
       <div className='px-4 py-4 flex items-center'>
@@ -13,6 +17,7 @@ export default function Header({ onOpenMenu }) {
         >
           <FiMenu className='h-6 w-6' />
         </button>
+
         <Link to='/' className='flex items-center gap-2 mx-auto'>
           <img
             src={logo}

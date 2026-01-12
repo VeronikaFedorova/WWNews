@@ -1,25 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getCategories } from '../services/newsApi';
 import { FiSearch, FiX } from 'react-icons/fi';
+import { useCategories } from '../hooks/useCategories';
+import type { Category } from '../services/newsApi';
 
-export default function SideMenu({ open, onClose }) {
-  const [categories, setCategories] = useState([]);
-  const [query, setQuery] = useState('');
+type SideMenuProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+export default function SideMenu({ open, onClose }: SideMenuProps) {
+  const [query, setQuery] = useState<string>('');
+
   const [params] = useSearchParams();
-  const activeCategory = params.get('category') || 'general';
+  const activeCategory = (params.get('category') || 'general') as Category;
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    getCategories().then((res) => {
-      setCategories(res.data.categories || []);
-    });
-  }, []);
+  const { data } = useCategories();
+  const categories = useMemo(() => data?.categories ?? [], [data]);
 
-  const onSearchSubmit = (e) => {
+  const onSearchSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
-    navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    const cleaned = query.trim();
+    if (!cleaned) return;
+
+    navigate(`/search?q=${encodeURIComponent(cleaned)}`);
     setQuery('');
     onClose();
   };
@@ -34,8 +40,10 @@ export default function SideMenu({ open, onClose }) {
         <div className='flex items-center justify-between px-4 py-4 border-b dark:border-zinc-800'>
           <h2 className='text-lg font-semibold'>Menu</h2>
           <button
+            type='button'
             onClick={onClose}
             className='p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800'
+            aria-label='Close menu'
           >
             <FiX />
           </button>
@@ -63,16 +71,16 @@ export default function SideMenu({ open, onClose }) {
             return (
               <button
                 key={category}
+                type='button'
                 onClick={() => {
                   navigate(`/?category=${category}`);
                   onClose();
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg capitalize transition
-                  ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800'
-                  }`}
+                className={`w-full text-left px-3 py-2 rounded-lg capitalize transition ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                }`}
               >
                 {category}
               </button>

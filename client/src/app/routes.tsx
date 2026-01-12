@@ -3,13 +3,13 @@ import AppLayout from './AppLayout';
 import Home from '../pages/Home';
 import Search from '../pages/Search';
 import Article from '../pages/Article';
-import Error from '../pages/Error';
+import ErrorPage from '../pages/ErrorPage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppLayout />,
-    errorElement: <Error />,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <Home /> },
       { path: 'search', element: <Search /> },

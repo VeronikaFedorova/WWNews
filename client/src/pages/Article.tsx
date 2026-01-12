@@ -1,29 +1,14 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiExternalLink } from 'react-icons/fi';
-import { getArticleById } from '../services/newsApi';
 import { cleanArticleContent } from '../helpers/text';
+import { useArticle } from '../hooks/useArticle';
 
 export default function Article() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
 
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: article, isLoading, error } = useArticle(id);
 
-  useEffect(() => {
-    setLoading(true);
-    setError('');
-
-    getArticleById(id)
-      .then((res) => setArticle(res.data.article))
-      .catch((e) =>
-        setError(e.response?.data?.error || 'Failed to load article')
-      )
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className='max-w-3xl mx-auto px-4 py-10 animate-pulse'>
         <div className='h-6 w-1/3 bg-zinc-200 dark:bg-zinc-800 rounded mb-4' />
@@ -38,10 +23,12 @@ export default function Article() {
     );
   }
 
-  if (error) {
+  if (error instanceof Error) {
     return (
       <div className='max-w-3xl mx-auto px-4 py-10 text-center'>
-        <p className='text-red-600'>{error}</p>
+        <p className='text-red-600'>
+          {error.message || 'Failed to load article'}
+        </p>
         <Link
           to='/'
           className='inline-flex items-center gap-2 mt-4 text-blue-600 hover:underline'
@@ -53,6 +40,13 @@ export default function Article() {
   }
 
   if (!article) return null;
+
+  const contentText =
+    article.content && typeof article.content === 'string'
+      ? cleanArticleContent(article.content)
+      : article.description
+      ? article.description
+      : '';
 
   return (
     <article className='max-w-3xl mx-auto px-4 py-10 text-zinc-700 dark:text-zinc-200'>
@@ -88,11 +82,11 @@ export default function Article() {
       )}
 
       <div className='prose prose-zinc dark:prose-invert max-w-none font-bold'>
-        {article.content
-          ? cleanArticleContent(article.content)
+        {contentText
+          ? contentText
               .split('\n')
-              .map((p, i) => <p key={i}>{p}</p>)
-          : article.description && <p>{article.description}</p>}
+              .map((line: string, index: number) => <p key={index}>{line}</p>)
+          : null}
       </div>
 
       {article.url && (
